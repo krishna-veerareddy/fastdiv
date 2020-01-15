@@ -1,0 +1,10 @@
+[package]
+name = "fastdiv"
+version = "0.0.1"
+authors = ["Krishna Sai Veera Reddy <veerareddy@email.arizona.edu>"]
+edition = "2018"
+
+[dependencies]
+
+[dev-dependencies]
+rand = "0.7"
