@@ -2,6 +2,7 @@ extern crate rand;
 extern crate fastdiv;
 
 use rand::prelude::*;
+use std::panic;
 
 macro_rules! generate_test {
     ($Ty: ty, $DivisorTy: ident, $Iterations: expr, $TestFn: ident) => {
@@ -13,6 +14,12 @@ macro_rules! generate_test {
                 let x: $Ty = rng.gen();
 
                 if x == 0 {
+                    assert!(
+                        std::panic::catch_unwind(|| {
+                            let _ = fastdiv::$DivisorTy::new(x);
+                        }).is_err()
+                    );
+
                     continue;
                 }
 
