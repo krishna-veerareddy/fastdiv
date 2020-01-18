@@ -44,7 +44,7 @@ macro_rules! generate_test {
                     divisor.divides(y),
                     (y % x) == 0,
                     "{} {} divisible by {}",
-                    y, if x % y == 0 { "is" } else { "is not" }, x
+                    y, if y % x == 0 { "is" } else { "is not" }, x
                 );
             }
         }
