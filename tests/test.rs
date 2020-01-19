@@ -5,7 +5,7 @@ use rand::prelude::*;
 use std::panic;
 
 macro_rules! generate_test {
-    ($Ty: ty, $DivisorTy: ident, $Iterations: expr, $TestFn: ident) => {
+    ($Ty: ty, $DivisorTy: ident, $Iterations: expr, $TestFn: ident, $InvalidDivisors: expr) => {
         #[test]
         fn $TestFn() {
             let mut rng = rand::thread_rng();
@@ -13,11 +13,13 @@ macro_rules! generate_test {
             for _ in 0..$Iterations {
                 let x: $Ty = rng.gen();
 
-                if x == 0 {
+                // Ensure invalid divisors cause panic
+                if $InvalidDivisors.iter().any(|&divisor| divisor == x) {
                     assert!(
                         std::panic::catch_unwind(|| {
                             let _ = fastdiv::$DivisorTy::new(x);
-                        }).is_err()
+                        }).is_err(),
+                        "{} should panic when constructed with {}", stringify!($DivisorTy), x
                     );
 
                     continue;
@@ -58,6 +60,10 @@ macro_rules! generate_test {
     }
 }
 
-generate_test!(u8, DivisorU8, 1_000, fastdiv_u8);
-generate_test!(u16, DivisorU16, 1_000_000, fastdiv_u16);
-generate_test!(u32, DivisorU32, 100_000_000, fastdiv_u32);
+generate_test!(u8, DivisorU8, 100_000, fastdiv_u8, [0]);
+generate_test!(u16, DivisorU16, 10_000_000, fastdiv_u16, [0]);
+generate_test!(u32, DivisorU32, 100_000_000, fastdiv_u32, [0]);
+
+generate_test!(i8, DivisorI8, 100_000, fastdiv_i8, [i8::min_value(), -1, 0, 1]);
+generate_test!(i16, DivisorI16, 10_000_000, fastdiv_i16, [i16::min_value(), -1, 0, 1]);
+generate_test!(i32, DivisorI32, 100_000_000, fastdiv_i32, [i32::min_value(), -1, 0, 1]);
