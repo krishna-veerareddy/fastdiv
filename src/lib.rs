@@ -123,14 +123,8 @@ macro_rules! signed_divisor {
                     "divisor cannot be {}", divisor
                 );
 
-                let mut is_negative = false;
-
-                let abs_divisor = if divisor < 0 {
-                    is_negative = true;
-                    -(divisor as $Wide2Ty)
-                } else {
-                    divisor as $Wide2Ty
-                } as $Wide2UnsignedTy;
+                let is_negative = divisor.is_negative();
+                let abs_divisor = Self::flip_sign(divisor, is_negative) as $Wide2UnsignedTy;
 
                 let mut magic = (!(0 as $Wide2UnsignedTy) / abs_divisor).wrapping_add(1);
 
@@ -145,17 +139,21 @@ macro_rules! signed_divisor {
                 }
             }
 
+            // Flips sign of an integer if condition is true
+            #[inline]
+            fn flip_sign(number: $Ty, condition: bool) -> $Ty {
+                let sign = -(condition as $Ty);
+
+                (number ^ sign) - sign
+            }
+
             #[inline]
             pub fn divide(self, dividend: $Ty) -> $Ty {
                 let is_negative = self.is_negative ^ dividend.is_negative();
                 let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
                 let quotient = $MulHi(self.magic, abs_dividend);
 
-                if is_negative {
-                    -(quotient as $Ty)
-                } else {
-                    quotient as $Ty
-                }
+                Self::flip_sign(quotient as $Ty, is_negative)
             }
 
             #[inline]
@@ -168,22 +166,16 @@ macro_rules! signed_divisor {
 
             #[inline]
             pub fn div_mod(self, dividend: $Ty) -> ($Ty, $Ty) {
-                let is_negative = dividend.is_negative();
+                let dividend_is_negative = dividend.is_negative();
                 let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
                 let (quotient, fraction) = $Mul(self.magic, abs_dividend);
-                let mut signed_quotient = quotient as $Ty;
-                let mut signed_remainder = $MulHi(fraction, self.abs_divisor) as $Ty;
+                let signed_quotient = quotient as $Ty;
+                let signed_remainder = $MulHi(fraction, self.abs_divisor) as $Ty;
 
-                if is_negative {
-                    signed_quotient = -signed_quotient;
-                    signed_remainder = -signed_remainder
-                }
-
-                if self.is_negative {
-                    signed_quotient = -signed_quotient;
-                }
-
-                (signed_quotient, signed_remainder)
+                (
+                    Self::flip_sign(signed_quotient, self.is_negative ^ dividend_is_negative),
+                    Self::flip_sign(signed_remainder, dividend_is_negative)
+                )
             }
 
             #[inline]
