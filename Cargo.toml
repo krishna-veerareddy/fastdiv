@@ -3,6 +3,9 @@ name = "fastdiv"
 version = "0.0.1"
 authors = ["Krishna Sai Veera Reddy <veerareddy@email.arizona.edu>"]
 edition = "2018"
+license = "MIT"
+categories = ["no-std"]
+description = "Fast integer division, modulus and divisibility checks for repeatedly used non-const divisors"
 
 [dependencies]
 
