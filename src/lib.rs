@@ -1,6 +1,6 @@
 #![no_std]
 
-//! Fast division, modulus and divisibility checks for repatedly used
+//! Fast division, modulus and divisibility checks for repeatedly used
 //! non-const divisors.
 //!
 //! # Usage
@@ -57,12 +57,27 @@ macro_rules! unsigned_divisor {
         }
 
         impl $DivisorTy {
-            pub fn new(divisor: $Ty) -> Self {
-                assert!(divisor != 0, "divisor cannot be zero");
+            doc_comment! {
+                concat! (
+"Creates a new `", stringify!($Ty), "` divisor.
 
-                Self {
-                    divisor: divisor as $Wide2Ty,
-                    magic: (!(0 as $Wide2Ty) / (divisor as $Wide2Ty)).wrapping_add(1),
+# Examples
+```
+extern crate fastdiv;
+
+let d = fastdiv::", stringify!($DivisorTy), "::new(7);
+```
+
+# Panics
+Panics if divisor is 0."
+                ),
+                pub fn new(divisor: $Ty) -> Self {
+                    assert!(divisor != 0, "divisor cannot be zero");
+
+                    Self {
+                        divisor: divisor as $Wide2Ty,
+                        magic: (!(0 as $Wide2Ty) / (divisor as $Wide2Ty)).wrapping_add(1),
+                    }
                 }
             }
 
@@ -192,25 +207,40 @@ macro_rules! signed_divisor {
         }
 
         impl $DivisorTy {
-            pub fn new(divisor: $Ty) -> Self {
-                assert!(
-                    !([0, 1, -1, <$Ty>::min_value()].iter().any(|&x| x == divisor)),
-                    "divisor cannot be {}", divisor
-                );
+            doc_comment! {
+                concat! (
+"Creates a new `", stringify!($Ty), "` divisor.
 
-                let is_negative = divisor.is_negative();
-                let abs_divisor = Self::flip_sign(divisor, is_negative) as $Wide2UnsignedTy;
+# Examples
+```
+extern crate fastdiv;
 
-                let mut magic = (!(0 as $Wide2UnsignedTy) / abs_divisor).wrapping_add(1);
+let d = fastdiv::", stringify!($DivisorTy), "::new(-7);
+```
 
-                if abs_divisor.is_power_of_two() {
-                    magic = magic.wrapping_add(1);
-                }
+# Panics
+Panics if divisor is one of -1, 0, 1 or std::", stringify!($Ty), "::MIN."
+                ),
+                pub fn new(divisor: $Ty) -> Self {
+                    assert!(
+                        !([0, 1, -1, <$Ty>::min_value()].iter().any(|&x| x == divisor)),
+                        "divisor cannot be {}", divisor
+                    );
 
-                Self {
-                    abs_divisor,
-                    magic,
-                    is_negative,
+                    let is_negative = divisor.is_negative();
+                    let abs_divisor = Self::flip_sign(divisor, is_negative) as $Wide2UnsignedTy;
+
+                    let mut magic = (!(0 as $Wide2UnsignedTy) / abs_divisor).wrapping_add(1);
+
+                    if abs_divisor.is_power_of_two() {
+                        magic = magic.wrapping_add(1);
+                    }
+
+                    Self {
+                        abs_divisor,
+                        magic,
+                        is_negative,
+                    }
                 }
             }
 
