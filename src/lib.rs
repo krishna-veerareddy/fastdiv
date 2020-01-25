@@ -1,6 +1,7 @@
 #![no_std]
 
-//! Fast division, modulus and divisibility checks for non-const divisors.
+//! Fast division, modulus and divisibility checks for repatedly used
+//! non-const divisors.
 //!
 //! # Usage
 //!
@@ -12,11 +13,18 @@
 //! let divisor = DivisorU16::new(7);
 //! let dividend = 14;
 //!
-//! let _ = divisor.divide(dividend);
-//! let _ = divisor.modulo(dividend);
+//! let quotient = divisor.divide(dividend);
+//! let remainder = divisor.modulo(dividend);
 //!
 //! assert!(divisor.divides(dividend));
 //! ```
+
+macro_rules! doc_comment {
+    ($x:expr, $($tt:tt)*) => {
+        #[doc = $x]
+        $($tt)*
+    };
+}
 
 macro_rules! unsigned_divisor {
     (
@@ -58,41 +66,108 @@ macro_rules! unsigned_divisor {
                 }
             }
 
-            #[inline]
-            pub fn divide(self, dividend: $Ty) -> $Ty {
-                if self.divisor == 1 {
-                    dividend
-                } else {
-                    $MulHi(self.magic, dividend as $Wide2Ty) as $Ty
+            doc_comment! {
+                concat! (
+"Computes `dividend / self` and returns the quotient.
+
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(7);
+let dividend = 13;
+let quotient = divisor.divide(dividend);
+
+assert_eq!(quotient, 1);
+```"
+                ),
+                #[inline]
+                pub fn divide(self, dividend: $Ty) -> $Ty {
+                    if self.divisor == 1 {
+                        dividend
+                    } else {
+                        $MulHi(self.magic, dividend as $Wide2Ty) as $Ty
+                    }
                 }
             }
 
-            #[inline]
-            pub fn modulo(self, dividend: $Ty) -> $Ty {
-                if self.divisor == 1 {
-                    0
-                } else {
-                    let fraction = $MulLo(self.magic, dividend as $Wide2Ty);
+            doc_comment! {
+                concat!(
+"Computes `dividend % self` and returns the remainder.
 
-                    $MulHi(self.divisor, fraction) as $Ty
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(7);
+let dividend = 13;
+let remainder = divisor.modulo(dividend);
+
+assert_eq!(remainder, 6);
+```"
+                ),
+                #[inline]
+                pub fn modulo(self, dividend: $Ty) -> $Ty {
+                    if self.divisor == 1 {
+                        0
+                    } else {
+                        let fraction = $MulLo(self.magic, dividend as $Wide2Ty);
+
+                        $MulHi(self.divisor, fraction) as $Ty
+                    }
                 }
             }
 
-            #[inline]
-            pub fn div_mod(self, dividend: $Ty) -> ($Ty, $Ty) {
-                if self.divisor == 1 {
-                    (dividend, 0)
-                } else {
-                    let (quotient, fraction) = $Mul(self.magic, dividend as $Wide2Ty);
-                    let remainder = $MulHi(fraction, self.divisor);
+            doc_comment! {
+                concat!(
+"Simultaneously computes the quotient and remainder when
+dividend is divided by self. This method is more efficient
+than computing quotient and remainder independently.
 
-                    (quotient as $Ty, remainder as $Ty)
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(7);
+let dividend = 13;
+let (quotient, remainder) = divisor.div_mod(dividend);
+
+assert!(quotient == 1 && remainder == 6);
+```"
+                ),
+                #[inline]
+                pub fn div_mod(self, dividend: $Ty) -> ($Ty, $Ty) {
+                    if self.divisor == 1 {
+                        (dividend, 0)
+                    } else {
+                        let (quotient, fraction) = $Mul(self.magic, dividend as $Wide2Ty);
+                        let remainder = $MulHi(fraction, self.divisor);
+
+                        (quotient as $Ty, remainder as $Ty)
+                    }
                 }
             }
 
-            #[inline]
-            pub fn divides(self, dividend: $Ty) -> bool {
-                self.divisor == 1 || $MulLo(self.magic, dividend as $Wide2Ty) < self.magic
+            doc_comment! {
+                concat!(
+"Checks whether dividend is divisible by self. This method is
+more efficient than checking divisibility by computing the
+remainder and comparing the result to zero.
+
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(7);
+let dividend = 13;
+
+assert!(!divisor.divides(dividend));
+```"
+                ),
+                #[inline]
+                pub fn divides(self, dividend: $Ty) -> bool {
+                    self.divisor == 1 || $MulLo(self.magic, dividend as $Wide2Ty) < self.magic
+                }
             }
         }
     }
@@ -147,40 +222,107 @@ macro_rules! signed_divisor {
                 (number ^ sign) - sign
             }
 
-            #[inline]
-            pub fn divide(self, dividend: $Ty) -> $Ty {
-                let is_negative = self.is_negative ^ dividend.is_negative();
-                let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
-                let quotient = $MulHi(self.magic, abs_dividend);
+            doc_comment! {
+                concat! (
+"Computes `dividend / self` and returns the quotient.
 
-                Self::flip_sign(quotient as $Ty, is_negative)
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(-7);
+let dividend = 13;
+let quotient = divisor.divide(dividend);
+
+assert_eq!(quotient, -1);
+```"
+                ),
+                #[inline]
+                pub fn divide(self, dividend: $Ty) -> $Ty {
+                    let is_negative = self.is_negative ^ dividend.is_negative();
+                    let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
+                    let quotient = $MulHi(self.magic, abs_dividend);
+
+                    Self::flip_sign(quotient as $Ty, is_negative)
+                }
             }
 
-            #[inline]
-            pub fn modulo(self, dividend: $Ty) -> $Ty {
-                let fraction = $MulLo(self.magic, dividend as $Wide2UnsignedTy);
-                let quotient = $MulHi(self.abs_divisor, fraction);
+            doc_comment! {
+                concat!(
+"Computes `dividend % self` and returns the remainder.
 
-                (quotient as $Ty) - (((self.abs_divisor as $Ty).wrapping_sub(1)) & (dividend >> {$Width - 1}))
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(-7);
+let dividend = 13;
+let remainder = divisor.modulo(dividend);
+
+assert_eq!(remainder, 6);
+```"
+                ),
+                #[inline]
+                pub fn modulo(self, dividend: $Ty) -> $Ty {
+                    let fraction = $MulLo(self.magic, dividend as $Wide2UnsignedTy);
+                    let quotient = $MulHi(self.abs_divisor, fraction);
+
+                    (quotient as $Ty) - (((self.abs_divisor as $Ty).wrapping_sub(1)) & (dividend >> {$Width - 1}))
+                }
             }
 
-            #[inline]
-            pub fn div_mod(self, dividend: $Ty) -> ($Ty, $Ty) {
-                let dividend_is_negative = dividend.is_negative();
-                let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
-                let (quotient, fraction) = $Mul(self.magic, abs_dividend);
-                let signed_quotient = quotient as $Ty;
-                let signed_remainder = $MulHi(fraction, self.abs_divisor) as $Ty;
+            doc_comment! {
+                concat!(
+"Simultaneously computes the quotient and remainder when
+dividend is divided by self. This method is more efficient
+than computing quotient and remainder independently.
 
-                (
-                    Self::flip_sign(signed_quotient, self.is_negative ^ dividend_is_negative),
-                    Self::flip_sign(signed_remainder, dividend_is_negative)
-                )
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(-7);
+let dividend = 13;
+let (quotient, remainder) = divisor.div_mod(dividend);
+
+assert!(quotient == -1 && remainder == 6);
+```"
+                ),
+                #[inline]
+                pub fn div_mod(self, dividend: $Ty) -> ($Ty, $Ty) {
+                    let dividend_is_negative = dividend.is_negative();
+                    let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
+                    let (quotient, fraction) = $Mul(self.magic, abs_dividend);
+                    let signed_quotient = quotient as $Ty;
+                    let signed_remainder = $MulHi(fraction, self.abs_divisor) as $Ty;
+
+                    (
+                        Self::flip_sign(signed_quotient, self.is_negative ^ dividend_is_negative),
+                        Self::flip_sign(signed_remainder, dividend_is_negative)
+                    )
+                }
             }
 
-            #[inline]
-            pub fn divides(self, dividend: $Ty) -> bool {
-                $MulLo(self.magic, (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy) < self.magic
+            doc_comment! {
+                concat!(
+"Checks whether dividend is divisible by self. This method is
+more efficient than checking divisibility by computing the
+remainder and comparing the result to zero.
+
+# Examples
+```
+extern crate fastdiv;
+
+let divisor = fastdiv::", stringify!($DivisorTy), "::new(-7);
+let dividend = 13;
+
+assert!(!divisor.divides(dividend));
+```"
+                ),
+                #[inline]
+                pub fn divides(self, dividend: $Ty) -> bool {
+                    $MulLo(self.magic, (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy) < self.magic
+                }
             }
         }
     }
