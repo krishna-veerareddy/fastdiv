@@ -3,6 +3,8 @@ Efficiently computes integer division, modulus and divisibility checks for repea
 
 Inspired by the Go library [fastdiv](https://github.com/bmkessler/fastdiv) written by [bmkessler](https://github.com/bmkessler).
 
+[![](https://github.com/krishna-veerareddy/fastdiv/workflows/ci/badge.svg)](https://github.com/krishna-veerareddy/fastdiv/actions)
+
 ## Usage
 ```rust
 extern crate fastdiv;
