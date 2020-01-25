@@ -1,7 +1,10 @@
-name: Fastdiv Test
+name: ci
 
 on:
   push:
+    paths-ignore:
+    - 'LICENSE'
+    - '**.md'
   pull_request:
     paths-ignore:
     - 'LICENSE'
