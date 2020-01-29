@@ -15,10 +15,16 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         toolchain: [stable, nightly]
+        exclude:
+        - toolchain: nightly
+          os: windows-latest
+        - toolchain: nightly
+          os: macos-latest
     steps:
     - uses: actions/checkout@v2
     - name: Toolchain
