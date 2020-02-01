@@ -19,6 +19,8 @@
 //! assert!(divisor.divides(dividend));
 //! ```
 
+use core::mem::size_of;
+
 macro_rules! doc_comment {
     ($x:expr, $($tt:tt)*) => {
         #[doc = $x]
@@ -26,30 +28,40 @@ macro_rules! doc_comment {
     };
 }
 
-macro_rules! unsigned_divisor {
+macro_rules! unsigned_multipliers {
     (
-        $Ty: ty, $Wide2Ty: ty, $Wide4Ty: ty,
-        $Width: expr,
-        $DivisorTy: ident,
+        $Ty: ty, $Wide2Ty: ty,
         $MulLo: ident, $MulHi: ident, $Mul: ident
     ) => {
         #[inline]
-        const fn $MulLo(a: $Wide2Ty, b: $Wide2Ty) -> $Wide2Ty {
+        const fn $MulLo(a: $Ty, b: $Ty) -> $Ty {
             a.wrapping_mul(b)
         }
 
         #[inline]
-        const fn $MulHi(a: $Wide2Ty, b: $Wide2Ty) -> $Wide2Ty {
-            ((a as $Wide4Ty) * (b as $Wide4Ty) >> {$Width * 2}) as $Wide2Ty
+        const fn $MulHi(a: $Ty, b: $Ty) -> $Ty {
+            ((a as $Wide2Ty) * (b as $Wide2Ty) >> {size_of::<$Ty>() * 8}) as $Ty
         }
 
         #[inline]
-        const fn $Mul(a: $Wide2Ty, b: $Wide2Ty) -> ($Wide2Ty, $Wide2Ty) {
-            let prod = (a as $Wide4Ty) * (b as $Wide4Ty);
+        const fn $Mul(a: $Ty, b: $Ty) -> ($Ty, $Ty) {
+            let prod = (a as $Wide2Ty) * (b as $Wide2Ty);
 
-            ((prod >> {$Width * 2}) as $Wide2Ty, prod as $Wide2Ty)
+            ((prod >> {size_of::<$Ty>() * 8}) as $Ty, prod as $Ty)
         }
+    }
+}
 
+unsigned_multipliers!(u16, u32, mullo16, mulhi16, mul16);
+unsigned_multipliers!(u32, u64, mullo32, mulhi32, mul32);
+unsigned_multipliers!(u64, u128, mullo64, mulhi64, mul64);
+
+macro_rules! unsigned_divisor {
+    (
+        $Ty: ty, $Wide2Ty: ty,
+        $DivisorTy: ident,
+        $MulLo: ident, $MulHi: ident, $Mul: ident
+    ) => {
         #[derive(Copy, Clone)]
         pub struct $DivisorTy {
             divisor: $Wide2Ty,
@@ -188,14 +200,13 @@ assert!(!divisor.divides(dividend));
     }
 }
 
-unsigned_divisor!(u8, u16, u32, 8, DivisorU8, mullo16, mulhi16, mul16);
-unsigned_divisor!(u16, u32, u64, 16, DivisorU16, mullo32, mulhi32, mul32);
-unsigned_divisor!(u32, u64, u128, 32, DivisorU32, mullo64, mulhi64, mul64);
+unsigned_divisor!(u8, u16, DivisorU8, mullo16, mulhi16, mul16);
+unsigned_divisor!(u16, u32, DivisorU16, mullo32, mulhi32, mul32);
+unsigned_divisor!(u32, u64, DivisorU32, mullo64, mulhi64, mul64);
 
 macro_rules! signed_divisor {
     (
         $Ty: ty, $Wide2Ty: ty, $Wide2UnsignedTy: ty,
-        $Width: expr,
         $DivisorTy: ident,
         $MulLo: ident, $MulHi: ident, $Mul: ident
     ) => {
@@ -297,7 +308,7 @@ assert_eq!(remainder, 6);
                     let fraction = $MulLo(self.magic, dividend as $Wide2UnsignedTy);
                     let quotient = $MulHi(self.abs_divisor, fraction);
 
-                    (quotient as $Ty) - (((self.abs_divisor as $Ty).wrapping_sub(1)) & (dividend >> {$Width - 1}))
+                    (quotient as $Ty) - (((self.abs_divisor as $Ty).wrapping_sub(1)) & (dividend >> {(size_of::<$Ty>() * 8) - 1}))
                 }
             }
 
@@ -358,6 +369,6 @@ assert!(!divisor.divides(dividend));
     }
 }
 
-signed_divisor!(i8, i16, u16, 8, DivisorI8, mullo16, mulhi16, mul16);
-signed_divisor!(i16, i32, u32, 16, DivisorI16, mullo32, mulhi32, mul32);
-signed_divisor!(i32, i64, u64, 32, DivisorI32, mullo64, mulhi64, mul64);
+signed_divisor!(i8, i16, u16, DivisorI8, mullo16, mulhi16, mul16);
+signed_divisor!(i16, i32, u32, DivisorI16, mullo32, mulhi32, mul32);
+signed_divisor!(i32, i64, u64, DivisorI32, mullo64, mulhi64, mul64);
