@@ -29,7 +29,7 @@ macro_rules! generate_test {
                 let divisor = fastdiv::$DivisorTy::new(x);
                 let y: $Ty = rng.gen();
                 let (ctrl_quot, ctrl_rem) = (y / x, y % x);
-                let (quot, rem) = (y / divisor, divisor.modulo(y));
+                let (quot, rem) = (y / divisor, y % divisor);
                 let (dr_quot, dr_rem) = divisor.div_mod(y);
 
                 assert_eq!(

@@ -14,12 +14,12 @@
 //! let dividend = 14;
 //!
 //! let quotient = dividend / divisor;
-//! let remainder = divisor.modulo(dividend);
+//! let remainder = dividend % divisor;
 //!
 //! assert!(divisor.divides(dividend));
 //! ```
 
-use core::ops::Div;
+use core::ops::{Div, Rem};
 use core::mem::size_of;
 
 macro_rules! doc_comment {
@@ -96,33 +96,6 @@ Panics if divisor is 0."
 
             doc_comment! {
                 concat!(
-"Computes `dividend % self` and returns the remainder.
-
-# Examples
-```
-extern crate fastdiv;
-
-let divisor = fastdiv::", stringify!($DivisorTy), "::new(7);
-let dividend = 13;
-let remainder = divisor.modulo(dividend);
-
-assert_eq!(remainder, 6);
-```"
-                ),
-                #[inline]
-                pub fn modulo(self, dividend: $Ty) -> $Ty {
-                    if self.divisor == 1 {
-                        0
-                    } else {
-                        let fraction = $MulLo(self.magic, dividend as $Wide2Ty);
-
-                        $MulHi(self.divisor, fraction) as $Ty
-                    }
-                }
-            }
-
-            doc_comment! {
-                concat!(
 "Simultaneously computes the quotient and remainder when
 dividend is divided by self. This method is more efficient
 than computing quotient and remainder independently.
@@ -178,11 +151,26 @@ assert!(!divisor.divides(dividend));
             type Output = $Ty;
 
             #[inline]
-            fn div(self, divisor: $DivisorTy) -> $Ty {
-                if divisor.divisor == 1 {
+            fn div(self, rhs: $DivisorTy) -> $Ty {
+                if rhs.divisor == 1 {
                     self
                 } else {
-                    $MulHi(divisor.magic, self as $Wide2Ty) as $Ty
+                    $MulHi(rhs.magic, self as $Wide2Ty) as $Ty
+                }
+            }
+        }
+
+        impl Rem<$DivisorTy> for $Ty {
+            type Output = $Ty;
+
+            #[inline]
+            fn rem(self, rhs: $DivisorTy) -> $Ty {
+                if rhs.divisor == 1 {
+                    0
+                } else {
+                    let fraction = $MulLo(rhs.magic, self as $Wide2Ty);
+
+                    $MulHi(rhs.divisor, fraction) as $Ty
                 }
             }
         }
@@ -254,30 +242,6 @@ Panics if divisor is one of -1, 0, 1 or std::", stringify!($Ty), "::MIN."
 
             doc_comment! {
                 concat!(
-"Computes `dividend % self` and returns the remainder.
-
-# Examples
-```
-extern crate fastdiv;
-
-let divisor = fastdiv::", stringify!($DivisorTy), "::new(-7);
-let dividend = 13;
-let remainder = divisor.modulo(dividend);
-
-assert_eq!(remainder, 6);
-```"
-                ),
-                #[inline]
-                pub fn modulo(self, dividend: $Ty) -> $Ty {
-                    let fraction = $MulLo(self.magic, dividend as $Wide2UnsignedTy);
-                    let quotient = $MulHi(self.abs_divisor, fraction);
-
-                    (quotient as $Ty) - (((self.abs_divisor as $Ty).wrapping_sub(1)) & (dividend >> {(size_of::<$Ty>() * 8) - 1}))
-                }
-            }
-
-            doc_comment! {
-                concat!(
 "Simultaneously computes the quotient and remainder when
 dividend is divided by self. This method is more efficient
 than computing quotient and remainder independently.
@@ -336,12 +300,24 @@ assert!(!divisor.divides(dividend));
 
             #[inline]
             #[allow(clippy::suspicious_arithmetic_impl)]
-            fn div(self, divisor: $DivisorTy) -> $Ty {
-                let is_negative = divisor.is_negative ^ self.is_negative();
+            fn div(self, rhs: $DivisorTy) -> $Ty {
+                let is_negative = rhs.is_negative ^ self.is_negative();
                 let abs_dividend = (self as $Wide2Ty).abs() as $Wide2UnsignedTy;
-                let quotient = $MulHi(divisor.magic, abs_dividend);
+                let quotient = $MulHi(rhs.magic, abs_dividend);
 
                 <$DivisorTy>::flip_sign(quotient as $Ty, is_negative)
+            }
+        }
+
+        impl Rem<$DivisorTy> for $Ty {
+            type Output = $Ty;
+
+            #[inline]
+            fn rem(self, rhs: $DivisorTy) -> $Ty {
+                let fraction = $MulLo(rhs.magic, self as $Wide2UnsignedTy);
+                let quotient = $MulHi(rhs.abs_divisor, fraction);
+
+                (quotient as $Ty) - (((rhs.abs_divisor as $Ty).wrapping_sub(1)) & (self >> {(size_of::<$Ty>() * 8) - 1}))
             }
         }
     }
