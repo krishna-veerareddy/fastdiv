@@ -15,8 +15,8 @@ fn main() {
     let divisor = DivisorU16::new(7);
     let dividend = 14;
 
-    let quotient = divisor.divide(dividend);
-    let remainder = divisor.modulo(dividend);
+    let quotient = dividend / divisor;
+    let remainder = dividend % divisor;
     assert!(divisor.divides(dividend));
 }
 ```
