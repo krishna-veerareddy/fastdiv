@@ -13,12 +13,13 @@
 //! let divisor = DivisorU16::new(7);
 //! let dividend = 14;
 //!
-//! let quotient = divisor.divide(dividend);
+//! let quotient = dividend / divisor;
 //! let remainder = divisor.modulo(dividend);
 //!
 //! assert!(divisor.divides(dividend));
 //! ```
 
+use core::ops::Div;
 use core::mem::size_of;
 
 macro_rules! doc_comment {
@@ -89,31 +90,6 @@ Panics if divisor is 0."
                     Self {
                         divisor: divisor as $Wide2Ty,
                         magic: (!(0 as $Wide2Ty) / (divisor as $Wide2Ty)).wrapping_add(1),
-                    }
-                }
-            }
-
-            doc_comment! {
-                concat! (
-"Computes `dividend / self` and returns the quotient.
-
-# Examples
-```
-extern crate fastdiv;
-
-let divisor = fastdiv::", stringify!($DivisorTy), "::new(7);
-let dividend = 13;
-let quotient = divisor.divide(dividend);
-
-assert_eq!(quotient, 1);
-```"
-                ),
-                #[inline]
-                pub fn divide(self, dividend: $Ty) -> $Ty {
-                    if self.divisor == 1 {
-                        dividend
-                    } else {
-                        $MulHi(self.magic, dividend as $Wide2Ty) as $Ty
                     }
                 }
             }
@@ -197,6 +173,19 @@ assert!(!divisor.divides(dividend));
                 }
             }
         }
+
+        impl Div<$DivisorTy> for $Ty {
+            type Output = $Ty;
+
+            #[inline]
+            fn div(self, divisor: $DivisorTy) -> $Ty {
+                if divisor.divisor == 1 {
+                    self
+                } else {
+                    $MulHi(divisor.magic, self as $Wide2Ty) as $Ty
+                }
+            }
+        }
     }
 }
 
@@ -261,31 +250,6 @@ Panics if divisor is one of -1, 0, 1 or std::", stringify!($Ty), "::MIN."
                 let sign = -(condition as $Ty);
 
                 (number ^ sign) - sign
-            }
-
-            doc_comment! {
-                concat! (
-"Computes `dividend / self` and returns the quotient.
-
-# Examples
-```
-extern crate fastdiv;
-
-let divisor = fastdiv::", stringify!($DivisorTy), "::new(-7);
-let dividend = 13;
-let quotient = divisor.divide(dividend);
-
-assert_eq!(quotient, -1);
-```"
-                ),
-                #[inline]
-                pub fn divide(self, dividend: $Ty) -> $Ty {
-                    let is_negative = self.is_negative ^ dividend.is_negative();
-                    let abs_dividend = (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy;
-                    let quotient = $MulHi(self.magic, abs_dividend);
-
-                    Self::flip_sign(quotient as $Ty, is_negative)
-                }
             }
 
             doc_comment! {
@@ -364,6 +328,20 @@ assert!(!divisor.divides(dividend));
                 pub fn divides(self, dividend: $Ty) -> bool {
                     $MulLo(self.magic, (dividend as $Wide2Ty).abs() as $Wide2UnsignedTy) < self.magic
                 }
+            }
+        }
+
+        impl Div<$DivisorTy> for $Ty {
+            type Output = $Ty;
+
+            #[inline]
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn div(self, divisor: $DivisorTy) -> $Ty {
+                let is_negative = divisor.is_negative ^ self.is_negative();
+                let abs_dividend = (self as $Wide2Ty).abs() as $Wide2UnsignedTy;
+                let quotient = $MulHi(divisor.magic, abs_dividend);
+
+                <$DivisorTy>::flip_sign(quotient as $Ty, is_negative)
             }
         }
     }
