@@ -21,7 +21,7 @@ fn start(_argc: isize, _argv: *const *const u8) -> isize {
     let divisor = DivisorU16::new(7);
     let dividend = 10;
 
-    let _ = divisor.divide(dividend);
+    let _ = dividend / divisor;
     let _ = divisor.modulo(dividend);
     let _ = divisor.divides(dividend);
 
