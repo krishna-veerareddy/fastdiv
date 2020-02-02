@@ -19,7 +19,7 @@
 //! assert!(divisor.divides(dividend));
 //! ```
 
-use core::ops::{Div, Rem};
+use core::ops::{Div, DivAssign, Rem};
 use core::mem::size_of;
 
 macro_rules! doc_comment {
@@ -156,6 +156,15 @@ assert!(!divisor.divides(dividend));
                     self
                 } else {
                     $MulHi(rhs.magic, self as $Wide2Ty) as $Ty
+                }
+            }
+        }
+
+        impl DivAssign<$DivisorTy> for $Ty {
+            #[inline]
+            fn div_assign(&mut self, rhs: $DivisorTy) {
+                if rhs.divisor != 1 {
+                    *self = $MulHi(rhs.magic, *self as $Wide2Ty) as $Ty;
                 }
             }
         }
@@ -306,6 +315,18 @@ assert!(!divisor.divides(dividend));
                 let quotient = $MulHi(rhs.magic, abs_dividend);
 
                 <$DivisorTy>::flip_sign(quotient as $Ty, is_negative)
+            }
+        }
+
+        impl DivAssign<$DivisorTy> for $Ty {
+            #[inline]
+            #[allow(clippy::suspicious_op_assign_impl)]
+            fn div_assign(&mut self, rhs: $DivisorTy) {
+                let is_negative = rhs.is_negative ^ self.is_negative();
+                let abs_dividend = (*self as $Wide2Ty).abs() as $Wide2UnsignedTy;
+                let quotient = $MulHi(rhs.magic, abs_dividend);
+
+                *self = <$DivisorTy>::flip_sign(quotient as $Ty, is_negative);
             }
         }
 

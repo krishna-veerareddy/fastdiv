@@ -30,7 +30,10 @@ macro_rules! generate_test {
                 let y: $Ty = rng.gen();
                 let (ctrl_quot, ctrl_rem) = (y / x, y % x);
                 let (quot, rem) = (y / divisor, y % divisor);
-                let (dr_quot, dr_rem) = divisor.div_mod(y);
+                let (dm_quot, dm_rem) = divisor.div_mod(y);
+                let mut y_div_assign = y;
+
+                y_div_assign /= divisor;
 
                 assert_eq!(
                     quot, ctrl_quot,
@@ -44,10 +47,16 @@ macro_rules! generate_test {
                     y, x, ctrl_rem, rem
                 );
 
+                assert_eq!(
+                    y_div_assign, ctrl_quot,
+                    "expected ({} /= {}) to be {} but found {}",
+                    y, x, ctrl_quot, y_div_assign
+                );
+
                 assert!(
-                    (ctrl_quot == dr_quot) && (ctrl_rem == dr_rem),
+                    (ctrl_quot == dm_quot) && (ctrl_rem == dm_rem),
                     "expected div_rem({}, {}) to be ({}, {}) but found ({}, {})",
-                    y, x, ctrl_quot, ctrl_rem, dr_quot, dr_rem
+                    y, x, ctrl_quot, ctrl_rem, dm_quot, dm_rem
                 );
 
                 assert_eq!(
