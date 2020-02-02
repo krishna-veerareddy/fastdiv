@@ -2,13 +2,14 @@ extern crate rand;
 extern crate fastdiv;
 
 use rand::prelude::*;
+use rand::rngs::SmallRng;
 use std::panic;
 
 macro_rules! generate_test {
     ($Ty: ty, $DivisorTy: ident, $Iterations: expr, $TestFn: ident, $InvalidDivisors: expr) => {
         #[test]
         fn $TestFn() {
-            let mut rng = rand::thread_rng();
+            let mut rng = SmallRng::from_rng(rand::thread_rng()).unwrap();
 
             for _ in 0..$Iterations {
                 let x: $Ty = rng.gen();
