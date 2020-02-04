@@ -12,58 +12,59 @@ macro_rules! generate_test {
             let mut rng = SmallRng::from_rng(rand::thread_rng()).unwrap();
 
             for _ in 0..$Iterations {
-                let x: $Ty = rng.gen();
+                let numerator: $Ty = rng.gen();
+                let denominator: $Ty = rng.gen();
 
                 // Ensure invalid divisors cause panic
-                if $InvalidDivisors.iter().any(|&divisor| divisor == x) {
+                if $InvalidDivisors.iter().any(|&divisor| divisor == denominator) {
                     assert!(
                         std::panic::catch_unwind(|| {
-                            let _ = fastdiv::$DivisorTy::new(x);
+                            let _ = fastdiv::$DivisorTy::new(denominator);
                         }).is_err(),
-                        "{} should panic when constructed with {}", stringify!($DivisorTy), x
+                        "{} should panic when constructed with {}", stringify!($DivisorTy), denominator
                     );
 
                     continue;
                 }
 
-                let divisor = fastdiv::$DivisorTy::new(x);
-                let y: $Ty = rng.gen();
-                let (ctrl_quot, ctrl_rem) = (y / x, y % x);
-                let (quot, rem) = (y / divisor, y % divisor);
-                let (dm_quot, dm_rem) = divisor.div_mod(y);
-                let mut y_div_assign = y;
+                let divisor = fastdiv::$DivisorTy::new(denominator);
+                let (ctrl_quot, ctrl_rem) = (numerator / denominator, numerator % denominator);
+                let ctrl_divisibility = numerator % denominator == 0;
+                let (quot, rem) = (numerator / divisor, numerator % divisor);
+                let (dm_quot, dm_rem) = divisor.div_mod(numerator);
+                let mut numerator_div_assign = numerator;
 
-                y_div_assign /= divisor;
+                numerator_div_assign /= divisor;
 
                 assert_eq!(
                     quot, ctrl_quot,
-                    "expected ({} / {}) to be {} but found {}",
-                    y, x, ctrl_quot, quot
+                    "expected {} / {} to be {} but found {}",
+                    numerator, denominator, ctrl_quot, quot
                 );
 
                 assert_eq!(
                     rem, ctrl_rem,
-                    "expected ({} % {}) to be {} but found {}",
-                    y, x, ctrl_rem, rem
+                    "expected {} % {} to be {} but found {}",
+                    numerator, denominator, ctrl_rem, rem
                 );
 
                 assert_eq!(
-                    y_div_assign, ctrl_quot,
-                    "expected ({} /= {}) to be {} but found {}",
-                    y, x, ctrl_quot, y_div_assign
+                    numerator_div_assign, ctrl_quot,
+                    "expected dividend after div_assign({}, {}) to be {} but found {}",
+                    numerator, denominator, ctrl_quot, numerator_div_assign
                 );
 
                 assert!(
                     (ctrl_quot == dm_quot) && (ctrl_rem == dm_rem),
-                    "expected div_rem({}, {}) to be ({}, {}) but found ({}, {})",
-                    y, x, ctrl_quot, ctrl_rem, dm_quot, dm_rem
+                    "expected div_mod({}, {}) to be ({}, {}) but found ({}, {})",
+                    numerator, denominator, ctrl_quot, ctrl_rem, dm_quot, dm_rem
                 );
 
                 assert_eq!(
-                    divisor.divides(y),
-                    (y % x) == 0,
+                    divisor.divides(numerator),
+                    ctrl_divisibility,
                     "{} {} divisible by {}",
-                    y, if y % x == 0 { "is" } else { "is not" }, x
+                    numerator, if ctrl_divisibility { "is" } else { "is not" }, denominator
                 );
             }
         }
