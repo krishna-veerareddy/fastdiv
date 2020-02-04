@@ -19,7 +19,7 @@
 //! assert!(divisor.divides(dividend));
 //! ```
 
-use core::ops::{Div, DivAssign, Rem};
+use core::ops::{Div, DivAssign, Rem, RemAssign};
 use core::mem::size_of;
 
 macro_rules! doc_comment {
@@ -183,6 +183,19 @@ assert!(!divisor.divides(dividend));
                 }
             }
         }
+
+        impl RemAssign<$DivisorTy> for $Ty {
+            #[inline]
+            fn rem_assign(&mut self, rhs: $DivisorTy) {
+                if rhs.divisor == 1 {
+                    *self = 0
+                } else {
+                    let fraction = $MulLo(rhs.magic, *self as $Wide2Ty);
+
+                    *self = $MulHi(rhs.divisor, fraction) as $Ty;
+                }
+            }
+        }
     }
 }
 
@@ -339,6 +352,16 @@ assert!(!divisor.divides(dividend));
                 let quotient = $MulHi(rhs.abs_divisor, fraction);
 
                 (quotient as $Ty) - (((rhs.abs_divisor as $Ty).wrapping_sub(1)) & (self >> {(size_of::<$Ty>() * 8) - 1}))
+            }
+        }
+
+        impl RemAssign<$DivisorTy> for $Ty {
+            #[inline]
+            fn rem_assign(&mut self, rhs: $DivisorTy) {
+                let fraction = $MulLo(rhs.magic, *self as $Wide2UnsignedTy);
+                let quotient = $MulHi(rhs.abs_divisor, fraction);
+
+                *self = (quotient as $Ty) - (((rhs.abs_divisor as $Ty).wrapping_sub(1)) & (*self >> {(size_of::<$Ty>() * 8) - 1}));
             }
         }
     }

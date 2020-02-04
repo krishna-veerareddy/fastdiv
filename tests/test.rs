@@ -33,8 +33,10 @@ macro_rules! generate_test {
                 let (quot, rem) = (numerator / divisor, numerator % divisor);
                 let (dm_quot, dm_rem) = divisor.div_mod(numerator);
                 let mut numerator_div_assign = numerator;
+                let mut numerator_rem_assign = numerator;
 
                 numerator_div_assign /= divisor;
+                numerator_rem_assign %= divisor;
 
                 assert_eq!(
                     quot, ctrl_quot,
@@ -52,6 +54,12 @@ macro_rules! generate_test {
                     numerator_div_assign, ctrl_quot,
                     "expected dividend after div_assign({}, {}) to be {} but found {}",
                     numerator, denominator, ctrl_quot, numerator_div_assign
+                );
+
+                assert_eq!(
+                    numerator_rem_assign, ctrl_rem,
+                    "expected dividend after rem_assign({}, {}) to be {} but found {}",
+                    numerator, denominator, ctrl_rem, numerator_rem_assign
                 );
 
                 assert!(
