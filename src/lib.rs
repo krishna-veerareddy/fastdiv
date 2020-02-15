@@ -19,6 +19,7 @@
 //! assert!(divisor.divides(dividend));
 //! ```
 
+use core::fmt;
 use core::ops::{Div, DivAssign, Rem, RemAssign};
 use core::mem::size_of;
 
@@ -196,6 +197,12 @@ assert!(!divisor.divides(dividend));
                 }
             }
         }
+
+        impl fmt::Display for $DivisorTy {
+            fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(formatter, "{}({})", stringify!($DivisorTy), self.divisor)
+            }
+        }
     }
 }
 
@@ -362,6 +369,18 @@ assert!(!divisor.divides(dividend));
                 let quotient = $MulHi(rhs.abs_divisor, fraction);
 
                 *self = (quotient as $Ty) - (((rhs.abs_divisor as $Ty).wrapping_sub(1)) & (*self >> {(size_of::<$Ty>() * 8) - 1}));
+            }
+        }
+
+        impl fmt::Display for $DivisorTy {
+            fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(
+                    formatter,
+                    "{}({}{})",
+                    stringify!($DivisorTy),
+                    if self.is_negative { "-" } else { "" },
+                    self.abs_divisor
+                )
             }
         }
     }
