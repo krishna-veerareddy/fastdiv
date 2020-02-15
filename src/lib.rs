@@ -19,6 +19,7 @@
 //! assert!(divisor.divides(dividend));
 //! ```
 
+use core::fmt;
 use core::ops::{Div, DivAssign, Rem, RemAssign};
 use core::mem::size_of;
 
@@ -194,6 +195,12 @@ assert!(!divisor.divides(dividend));
 
                     *self = $MulHi(rhs.divisor, fraction) as $Ty;
                 }
+            }
+        }
+
+        impl fmt::Display for $DivisorTy {
+            fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(formatter, "{}({})", stringify!($DivisorTy), self.divisor)
             }
         }
     }
