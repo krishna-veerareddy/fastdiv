@@ -371,6 +371,18 @@ assert!(!divisor.divides(dividend));
                 *self = (quotient as $Ty) - (((rhs.abs_divisor as $Ty).wrapping_sub(1)) & (*self >> {(size_of::<$Ty>() * 8) - 1}));
             }
         }
+
+        impl fmt::Display for $DivisorTy {
+            fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(
+                    formatter,
+                    "{}({}{})",
+                    stringify!($DivisorTy),
+                    if self.is_negative { "-" } else { "" },
+                    self.abs_divisor
+                )
+            }
+        }
     }
 }
 
