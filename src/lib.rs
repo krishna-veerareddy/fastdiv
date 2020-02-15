@@ -64,7 +64,7 @@ macro_rules! unsigned_divisor {
         $DivisorTy: ident,
         $MulLo: ident, $MulHi: ident, $Mul: ident
     ) => {
-        #[derive(Copy, Clone)]
+        #[derive(Copy, Clone, Debug)]
         pub struct $DivisorTy {
             divisor: $Wide2Ty,
             magic: $Wide2Ty,
@@ -216,7 +216,7 @@ macro_rules! signed_divisor {
         $DivisorTy: ident,
         $MulLo: ident, $MulHi: ident, $Mul: ident
     ) => {
-        #[derive(Copy, Clone)]
+        #[derive(Copy, Clone, Debug)]
         pub struct $DivisorTy {
             abs_divisor: $Wide2UnsignedTy,
             magic: $Wide2UnsignedTy,
